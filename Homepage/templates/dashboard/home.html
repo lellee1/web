@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="text-3xl mb-6 text-white">Home</h1>
+<p class="text-gray-300 mb-8">Welcome back, {{ user.username }}! Use the boxes below to navigate.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Homepage card -->
+  <a href="{% url 'applications' %}" class="block">
+    <div class="p-6 bg-gray-800 rounded-lg hover:bg-gray-700 transition">
+      <h2 class="text-2xl text-white mb-2">My Homepage</h2>
+      <p class="text-gray-400">Visit my personal homepage for projects, blog posts, and more.</p>
+    </div>
+  </a>
+</div>
+{% endblock %}
