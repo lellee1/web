@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<h1 class="text-3xl mb-6 text-white flex justify-between items-center">
+  Applications
+  <a href="{% if request.GET.editmode %}?{% else %}?editmode=1{% endif %}" class="px-3 py-1 bg-zinc-700 rounded text-white ml-4 text-sm">
+    {% if request.GET.editmode %}Exit Edit Mode{% else %}Edit Mode{% endif %}
+  </a>
+</h1>
+<p class="text-gray-300 mb-8">Här finns länkar till allt vi använder i vår homelab-miljö.</p>
+
+{% if request.GET.editmode %}
+  <!-- Feedback messages -->
+  {% if messages %}
+    <ul>
+      {% for message in messages %}
+        <li class="text-green-400">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <!-- Add/Edit Widget Form -->
+  <div class="mb-8 p-4 bg-zinc-700 rounded">
+    <h2 class="text-xl text-white mb-4">{% if edit_widget %}Edit Widget{% else %}Add Widget{% endif %}</h2>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <style>
+        .dashboard-widget-form {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 18px 24px;
+        }
+        .dashboard-widget-form label {
+          color: #fff;
+          margin-bottom: 4px;
+          display: block;
+        }
+        .dashboard-widget-form input,
+        .dashboard-widget-form select {
+          background-color: #1e293b;
+          color: #fff;
+          border: 1px solid #334155;
+          margin-bottom: 8px;
+          padding: 8px;
+          width: 100%;
+        }
+        .dashboard-widget-form textarea {
+          background-color: #1e293b;
+          color: #fff;
+          border: 1px solid #334155;
+          margin-bottom: 8px;
+          padding: 8px;
+          width: 100%;
+          min-height: 40px;
+          resize: vertical;
+        }
+        .dashboard-widget-form .form-row {
+          margin-bottom: 0;
+        }
+        .dashboard-group-form {
+          background: #1e293b;
+          padding: 16px;
+          border-radius: 8px;
+        }
+        .dashboard-group-form label,
+        .dashboard-group-form input {
+          color: #fff;
+        }
+        .dashboard-group-form input {
+          background-color: #334155;
+          border: 1px solid #475569;
+          padding: 8px;
+          margin-bottom: 8px;
+        }
+        @media (max-width: 1024px) {
+          .dashboard-widget-form {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        @media (max-width: 768px) {
+          .dashboard-widget-form {
+            grid-template-columns: 1fr;
+          }
+        }
+      </style>
+      <div class="dashboard-widget-form">
+        {% for field in form %}
+          <div class="form-row">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}
+              <small class="text-gray-400">{{ field.help_text }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+              <div class="text-red-400">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="mt-4">
+        {% if edit_widget %}
+          <input type="hidden" name="action" value="edit">
+          <input type="hidden" name="widget_id" value="{{ edit_widget.id }}">
+          <button type="submit" class="px-4 py-2 bg-blue-600 rounded text-white">Update Widget</button>
+          <a href="{% url 'applications' %}?editmode=1" class="ml-2 px-4 py-2 bg-gray-700 rounded text-white">Cancel</a>
+        {% else %}
+          <input type="hidden" name="action" value="add">
+          <button type="submit" class="px-4 py-2 bg-blue-600 rounded text-white">Add Widget</button>
+        {% endif %}
+      </div>
+    </form>
+    <!-- Add Widget Group Form -->
+    <div class="mt-8 dashboard-group-form flex flex-col md:flex-row md:items-end md:space-x-8 space-y-4 md:space-y-0">
+      <div class="flex-1">
+        <h2 class="text-lg text-white mb-2">Add Widget Group</h2>
+        <form method="post" class="space-y-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_group">
+          <div>
+            {{ group_form.name.label_tag }}
+            {{ group_form.name }}
+            {% for error in group_form.name.errors %}
+              <div class="text-red-400">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <button type="submit" class="px-4 py-2 bg-green-600 rounded text-white">Add Group</button>
+        </form>
+      </div>
+      <div class="flex-1">
+        <h2 class="text-lg text-white mb-2">Delete Widget Group</h2>
+        <form method="post" class="space-y-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_group">
+          <div>
+            <label for="group_id" class="text-white">Select group to delete:</label>
+            <select name="group_id" id="group_id" class="w-full bg-gray-700 text-white rounded px-2 py-1">
+              <option value="">-- Select group --</option>
+              {% for group in all_groups %}
+                <option value="{{ group.id }}">{{ group.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="px-4 py-2 bg-red-700 rounded text-white"
+            onclick="return confirm('Delete this widget group? Only empty groups can be deleted.');">
+            Delete Group
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% for group, widgets in groups.items %}
+  <div class="flex items-center justify-between mt-8 mb-4">
+    <h2 class="text-xl text-white">{{ group }}</h2>
+    {% if request.GET.editmode and group != "Other" %}
+      <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_group">
+        <input type="hidden" name="group_name" value="{{ group }}">
+        <button type="submit" class="px-2 py-1 bg-red-700 rounded text-white" onclick="return confirm('Delete this widget group and all its widgets?');">Delete Group</button>
+      </form>
+    {% endif %}
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {% for widget in widgets %}
+      <a href="{{ widget.link }}" {% if widget.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %} class="block">
+        <div class="flex items-center p-4 bg-gray-800 rounded-lg mb-4 hover:bg-gray-700 transition">
+          {% if widget.icon %}
+            <img src="{{ widget.icon.url }}" alt="{{ widget.title }} icon" class="w-12 h-12 mr-4" />
+          {% endif %}
+          <div class="flex-1">
+            <h3 class="text-lg text-white">{{ widget.title }}</h3>
+            <p class="text-gray-400">{{ widget.description }}</p>
+          </div>
+          {% if request.GET.editmode %}
+            <div class="ml-4 flex flex-col space-y-2">
+              <a href="?editmode=1&edit={{ widget.id }}" class="px-2 py-1 bg-yellow-600 rounded text-white">Edit</a>
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="widget_id" value="{{ widget.id }}">
+                <button type="submit" class="px-2 py-1 bg-red-600 rounded text-white" onclick="return confirm('Delete this widget?');">Delete</button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endfor %}
+{% endblock %}

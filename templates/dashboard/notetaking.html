@@ -1,0 +1,239 @@
+{% extends 'base.html' %}{% load static %}
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/jstree@3.3.12/dist/themes/default/style.min.css" rel="stylesheet" />
+<style>
+  /* Highlight selected node */
+  .jstree-default .jstree-clicked > a {
+    background: #ec07d9 !important;
+    color: #2df305 !important;
+  }
+
+  /* Highlight hovered node */
+  .jstree-default .jstree-node:hover > a {
+    background: #696a6d !important;
+    color: #302e2ece !important;
+  }
+
+  /* Highlight the whole row when hovered */
+  .jstree-wholerow-hovered {
+    background: #696a6d !important; /* Your hover color */
+    color: #fff !important;
+  }
+
+  /* Highlight the whole row when selected */
+  .jstree-wholerow-clicked {
+    background: #020617 !important; /* Your selected color */
+    color: #fff !important;
+  }
+
+  /* Make sure text is readable on selected/hovered rows */
+  .jstree-default .jstree-wholerow-hovered .jstree-anchor,
+  .jstree-default .jstree-wholerow-clicked .jstree-anchor {
+    color: #fff !important;
+  }
+
+  /* Main container fills viewport and scrolls internally */
+  .notetaking-main {
+    min-height: 600px;
+    height: calc(100vh - 80px); /* adjust for your header/nav */
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Sidebar tree panel: scrolls internally */
+  #tree-container {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  /* Note panel: scrolls internally */
+  .note-panel {
+    flex: 1; /* This makes the note panel fill the remaining space */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden; /* Prevent double scrollbars */
+  }
+
+  /* Add padding to inner content if needed */
+  .note-panel-inner {
+    flex: 1; /* This makes the inner panel fill the note panel */
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    background: #020617;
+    color: #fff;
+    overflow: hidden; /* Prevent double scrollbars */
+  }
+
+  /* Textarea scrolls if content is long */
+  #note-content {
+    flex: 1; /* This makes the textarea fill the remaining space */
+    min-height: 200px;
+    resize: none;
+    overflow-y: auto;
+    background: #0F172A;
+    color: #fff;
+  }
+</style>
+<div class="notetaking-main">
+  <!-- Sidebar tree + controls -->
+  <div id="tree-container" class="w-64 bg-slate-900 p-4">
+    <!-- Button bar above tree -->
+    <div id="tree-buttons" class="flex space-x-2 mb-4">
+      <button id="btn-new-folder" class="px-2 py-1 bg-slate-950 rounded text-white">New Folder</button>
+      <button id="btn-new-note"   class="px-2 py-1 bg-slate-950 rounded text-white">New Note</button>
+      <button id="btn-delete"     class="px-2 py-1 bg-slate-950 rounded text-white">Delete</button>
+    </div>
+    <!-- jsTree renders here -->
+    <div id="notes-tree"></div>
+  </div>
+  <!-- Note editor panel -->
+  <div class="note-panel">
+    <div class="note-panel-inner">
+      <div class="flex justify-between items-center mb-4">
+        <!-- Title input shows selected node name -->
+        <input id="note-topic" class="bg-slate-900 p-2 rounded w-1/3" placeholder="Title" />
+        <!-- Remove the Save button -->
+      </div>
+      <!-- Textarea for note content -->
+      <textarea id="note-content" class="flex-1 bg-slate-900 p-4 rounded resize-none" placeholder="Content"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- jQuery and jsTree -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jstree@3.3.12/dist/jstree.min.js"></script>
+<script>
+// initialize tree with rename, drag-and-drop
+$('#notes-tree').jstree({
+  'core': {
+    check_callback: true,
+    data: { url: '{% url "notes_tree" %}' },
+    themes: { stripes: true }
+  },
+  'plugins': ['dnd','contextmenu','wholerow'],
+  'contextmenu': { items: function(node) {
+    return {
+      "Rename": {
+        "label": "Rename",
+        "action": function(obj) { $('#notes-tree').jstree(true).edit(node); }
+      },
+      "Delete": {
+        "label": "Delete",
+        "action": function(obj) { $('#btn-delete').click(); }
+      }
+    };
+  }}
+});
+
+let current = null;
+
+// Helper to refresh tree and restore open nodes
+function reloadTree() {
+  $('#notes-tree').jstree(true).refresh();
+}
+
+// Update selection and load content
+$('#notes-tree').on('select_node.jstree', (e, d) => {
+  current = d.node;
+  $('#note-topic').val(current.text);
+  if (current.id.startsWith('note_')) {
+    const nid = current.id.split('_')[1];
+    fetch(`{% url 'note_content' 0 %}`.replace('0', nid))
+      .then(r => r.json()).then(data => $('#note-content').val(data.content));
+  } else {
+    $('#note-content').val('');
+  }
+});
+
+// Handle rename via jsTree edit
+$('#notes-tree').on('rename_node.jstree', (e, d) => {
+  const [kind, id] = d.node.id.split('_');
+  const url = kind==='folder'
+    ? '{% url "rename_folder" 0 %}'.replace('0', id)
+    : '{% url "rename_note" 0 %}'.replace('0', id);
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}' },
+    body: JSON.stringify({ name: d.text })
+  }).then(() => reloadTree());
+});
+
+// Node move handling
+$('#notes-tree').on('move_node.jstree', function(e, data) {
+  fetch('{% url "move_node" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({
+      id: data.node.id,
+      parent: data.parent // this is the new parent id (e.g. "folder_3" or "#" for root)
+    })
+  }).then(() => reloadTree());
+});
+
+// Button actions
+$('#btn-new-folder').click(() => {
+  const parent = current && current.id.startsWith('folder_') ? current.id.split('_')[1] : null;
+  fetch('{% url "create_folder" %}', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+    body: JSON.stringify({ parent, name: 'New Folder' })
+  }).then(() => reloadTree());
+});
+
+$('#btn-new-note').click(() => {
+  if (!current || !current.id.startsWith('folder_')) return;
+  const folderId = current.id.split('_')[1];
+  fetch('{% url "create_note" %}', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+    body: JSON.stringify({ folder: folderId, title:'Untitled' })
+  }).then(() => reloadTree());
+});
+
+$('#btn-delete').click(() => {
+  if (!current) return;
+  fetch('{% url "delete_node" %}', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+    body: JSON.stringify({ id: current.id })
+  }).then(() => {
+    reloadTree(); $('#note-topic').val(''); $('#note-content').val('');
+  });
+});
+
+
+$('#note-topic').on('change blur', function() {
+  if (!current) return;
+  const newTitle = $(this).val();
+  if (current.id.startsWith('folder_')) {
+    const folderId = current.id.split('_')[1];
+    fetch('{% url "rename_folder" 0 %}'.replace('0', folderId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ name: newTitle })
+    }).then(() => reloadTree());
+  } else if (current.id.startsWith('note_')) {
+    const noteId = current.id.split('_')[1];
+    fetch('{% url "note_update" 0 %}'.replace('0', noteId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ title: newTitle, content: $('#note-content').val() })
+    }).then(() => reloadTree());
+  }
+});
+
+let noteSaveTimeout = null;
+$('#note-content').on('input', function() {
+  if (!current || !current.id.startsWith('note_')) return;
+  clearTimeout(noteSaveTimeout);
+  noteSaveTimeout = setTimeout(() => {
+    const noteId = current.id.split('_')[1];
+    fetch('{% url "note_update" 0 %}'.replace('0', noteId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ title: $('#note-topic').val(), content: $(this).val() })
+    });
+  }, 500); // Save 0.5s after last keystroke
+});
+</script>
+{% endblock %}

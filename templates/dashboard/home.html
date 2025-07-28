@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="flex flex-col items-center mt-8">
+  <img src="{% static 'img/guldgossarna.jpg' %}" alt="Guldgossarna" class="rounded-full shadow-lg mb-6 w-64 h-64 object-cover" />
+  <h1 class="text-4xl mb-4 text-white font-bold">Welcome to Guldgossarna!</h1>
+  <p class="text-gray-300 mb-6 text-lg text-center max-w-2xl">
+    We are three friends passionate about technology, homelabs, and creative projects. 
+    Our group, Guldgossarna, was founded to share our journey, experiments, and discoveries in the world of IT, coding, and hardware tinkering.
+    <br><br>
+    On this site, you'll find our latest projects, blog posts, and resources. Whether it's building servers, automating our homes, or just having fun with new tech, we love to learn and share.
+    <br><br>
+    Feel free to explore, connect, and join us on our adventure!
+  </p>
+</div>
+{% endblock %}

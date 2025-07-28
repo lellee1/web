@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+  <h1 class="text-3xl text-white">Forum Threads</h1>
+  <div class="flex space-x-2">
+    <form method="get" action="{% url 'forum_list' %}">
+      {% if editmode %}
+        <button type="submit" class="px-3 py-1 bg-zinc-700 text-white rounded text-sm">Exit Edit Mode</button>
+      {% else %}
+        <input type="hidden" name="editmode" value="1">
+        <button type="submit" class="px-3 py-1 bg-zinc-700 text-white rounded text-sm">Edit Mode</button>
+      {% endif %}
+    </form>
+    <form method="get" action="{% url 'forum_list' %}">
+      <input type="hidden" name="new_thread" value="1">
+      <button type="submit" class="px-3 py-1 bg-zinc-700 text-white rounded text-sm">New Thread</button>
+    </form>
+    {% if edit_thread %}
+      <form method="get" action="{% url 'forum_list' %}">
+        <input type="hidden" name="editmode" value="1">
+        <button type="submit" class="px-3 py-1 bg-zinc-700 text-white rounded text-sm">Cancel</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<ul>
+  {% for thread in threads %}
+    <li class="flex items-center justify-between mb-2">
+      <a href="{% url 'forum_detail' thread.pk %}" class="text-blue-400">{{ thread.title }}</a>
+      <span class="text-gray-400 ml-2">by {{ thread.created_by.username }}</span>
+      {% if editmode %}
+        <div class="flex space-x-2 ml-4">
+          <form method="get" action="{% url 'forum_list' %}">
+            <input type="hidden" name="editmode" value="1">
+            <input type="hidden" name="edit_thread" value="{{ thread.pk }}">
+            <button type="submit" class="px-2 py-1 bg-yellow-700 text-white rounded text-xs">Edit</button>
+          </form>
+          <form method="post" action="{% url 'thread_manage' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="thread_id" value="{{ thread.pk }}">
+            <button type="submit" class="px-2 py-1 bg-red-700 text-white rounded text-xs" onclick="return confirm('Delete this thread?');">Delete</button>
+          </form>
+        </div>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+{% if show_new_thread %}
+  <div class="mt-8 p-4 bg-zinc-700 rounded">
+    <h2 class="text-xl text-white mb-2">New Thread</h2>
+    <form method="post" action="{% url 'thread_manage' %}">
+      {% csrf_token %}
+      <style>
+        input[name="title"] {
+          background-color: #1e293b;
+          color: #fff;
+          border: 1px solid #334155;
+          padding: 8px;
+          border-radius: 6px;
+        }
+        label[for="id_title"] {
+          color: #fff;
+        }
+      </style>
+      {{ thread_form.as_p }}
+      <input type="hidden" name="action" value="add">
+      <button type="submit" class="px-4 py-2 bg-blue-600 rounded text-white">Create Thread</button>
+    </form>
+  </div>
+{% elif editmode and edit_thread %}
+  <div class="mt-8 p-4 bg-zinc-700 rounded">
+    <h2 class="text-xl text-white mb-2">Edit Thread</h2>
+    <form method="post" action="{% url 'thread_manage' %}">
+      {% csrf_token %}
+      <style>
+        input[name="title"] {
+          background-color: #1e293b;
+          color: #fff;
+          border: 1px solid #334155;
+          padding: 8px;
+          border-radius: 6px;
+        }
+        label[for="id_title"] {
+          color: #fff;
+        }
+      </style>
+      {{ thread_form.as_p }}
+      <input type="hidden" name="action" value="edit">
+      <input type="hidden" name="thread_id" value="{{ edit_thread.pk }}">
+      <button type="submit" class="px-4 py-2 bg-blue-600 rounded text-white">Update Thread</button>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}
