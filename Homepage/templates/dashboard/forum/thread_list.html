@@ -1,9 +1,0 @@
-{% extends 'base.html' %}
-{% block content %}
-<h1 class="text-3xl mb-4 text-white">Forum Threads</h1>
-<ul>
-  {% for thread in threads %}
-    <li><a href="{% url 'forum_detail' thread.pk %}" class="text-blue-400">{{ thread.title }}</a> by {{ thread.created_by.username }}</li>
-  {% endfor %}
-</ul>
-{% endblock %}
