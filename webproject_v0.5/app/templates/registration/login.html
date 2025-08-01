@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-md mx-auto mt-16 p-6 bg-gray-900 rounded-lg shadow-md">
+  <h2 class="text-2xl mb-4 text-white">Login</h2>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    
+    <div>
+      <label for="id_username" class="block text-white mb-2">Username:</label>
+      <input type="text" 
+             name="username" 
+             id="id_username" 
+             class="w-full p-3 bg-gray-800 text-white border border-gray-600 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+             placeholder="Enter your username"
+             required>
+    </div>
+    
+    <div>
+      <label for="id_password" class="block text-white mb-2">Password:</label>
+      <input type="password" 
+             name="password" 
+             id="id_password" 
+             class="w-full p-3 bg-gray-800 text-white border border-gray-600 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+             placeholder="Enter your password"
+             required>
+    </div>
+    
+    {% if form.errors %}
+      <div class="text-red-400 text-sm">
+        {% for field, errors in form.errors.items %}
+          {% for error in errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    {% endif %}
+    
+    <button type="submit" class="w-full py-3 bg-blue-600 rounded hover:bg-blue-500 text-white font-medium transition-colors">Sign In</button>
+  </form>
+  
+  <div class="mt-4 text-center">
+    <p class="text-gray-400 text-sm">Don't have an account? Contact an administrator.</p>
+  </div>
+</div>
+{% endblock %}

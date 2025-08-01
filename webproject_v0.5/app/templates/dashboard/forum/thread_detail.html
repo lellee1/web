@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .form-field {
+    margin-bottom: 1rem;
+  }
+  .form-field label {
+    display: block;
+    color: #e5e7eb;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  .form-field input, .form-field textarea {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #374151;
+    color: white;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+  }
+  .form-field input:focus, .form-field textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+</style>
+<h1 class="text-3xl text-white">{{ object.title }}</h1>
+<div class="mt-4">
+  {% for post in object.posts.all %}
+    <div class="bg-gray-800 p-4 rounded mb-4">
+      <p class="text-gray-200">{{ post.content }}</p>
+      {% for att in post.attachments.all %}
+        {% with att.file.url|lower as url %}
+          {% if ".jpg" in url or ".jpeg" in url or ".png" in url or ".gif" in url %}
+            <img src="{{ att.file.url }}" alt="Attachment" class="my-2 rounded max-w-xs max-h-48" />
+          {% endif %}
+        {% endwith %}
+        <p><a href="{{ att.file.url }}" class="text-blue-400">Download attachment</a></p>
+      {% endfor %}
+      <small class="text-gray-500">Posted by {{ post.get_author_display }} on {{ post.created_at }}</small>
+    </div>
+  {% endfor %}
+</div>
+
+{% if show_reply_form %}
+  <h2 class="text-xl text-white mt-8 mb-4">Reply to: {{ object.title }}</h2>
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    <div class="form-field">
+      {{ form.content.label_tag }}
+      {{ form.content }}
+    </div>
+    {% if not user.is_authenticated %}
+    <div class="form-field">
+      {{ form.author_name.label_tag }}
+      {{ form.author_name }}
+    </div>
+    {% endif %}
+    <div>
+      <label class="block text-gray-200 mb-2">Attachments</label>
+      {{ formset.management_form }}
+      {% for subform in formset %}
+        <div class="mb-2">
+          {{ subform.file.label_tag }}<br>
+          {{ subform.file }}
+        </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="px-6 py-2 bg-blue-600 rounded hover:bg-blue-500 text-white">Post Reply</button>
+  </form>
+{% else %}
+  <a href="{% url 'forum_post' object.pk %}" class="mt-4 inline-block bg-blue-600 px-4 py-2 rounded text-white">Reply</a>
+{% endif %}
+{% endblock %}

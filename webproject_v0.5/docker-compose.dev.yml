@@ -1,0 +1,19 @@
+# Docker Compose override for development
+# Use: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  app:
+    environment:
+      - DEBUG=True
+    volumes:
+      - ./app:/app
+    ports:
+      - "8000:8000"
+
+  nginx:
+    # For development, you might want to disable nginx and access Django directly
+    # Comment out this entire service if you want to use Django dev server
+    ports:
+      - "8080:80"

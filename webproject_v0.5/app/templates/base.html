@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homelab Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Moody Badger 62 Button Style */
+    .uiverse-btn {
+      padding: 0.7em 2em;
+      border: none;
+      outline: none;
+      color: #fff;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 500;
+      box-shadow: none;
+      transition: box-shadow 0.3s, background 0.3s;
+      display: block;
+      text-align: center;
+      text-decoration: none;
+    }
+    .uiverse-btn:before {
+      display: none;
+    }
+    .uiverse-btn:hover {
+      color: #00c6ff;
+      background: transparent;
+      box-shadow: none;
+    }
+    .active-uiverse-btn {
+      background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%) !important;
+      color: #fff !important;
+      box-shadow: 0 0 20px 0 #0072ff !important;
+      position: relative;
+    }
+    .active-uiverse-btn:before {
+      display: none;
+    }
+  </style>
+</head>
+<body class="flex min-h-screen text-gray-200 bg-gradient-to-br from-slate-950 to-slate-500">
+  <!--flex min-h-screen bg-slate-950 text-gray-200-->
+  <!-- Sidebar -->
+  <aside class="w-80 flex flex-col"
+    style="background: url('{% static 'img/profile1.webp' %}') center center / cover no-repeat, #1f2937;">
+    <div class="p-6 text-center">
+      <!-- Remove or comment out the small profile image below if you don't want it -->
+      <!--
+      <a href="{% url 'dashboard_home' %}">
+        <img src="{% static 'img/profile1.webp' %}" alt="Profile" class="mx-auto w-25 h-25 rounded-full border-2 border-blue-600">
+      </a>
+      -->
+      <h2 class="mt-4 text-4xl font-semibold text-white drop-shadow">Guldgossarna</h2>
+      <p class="text-sm text-gray-200 drop-shadow">Homelab Enthusiasts</p>
+    </div>
+    <nav class="flex-1 px-4 space-y-2">
+      <a href="{% url 'dashboard_home' %}" class="uiverse-btn {% if request.resolver_match.url_name == 'dashboard_home' %}active-uiverse-btn{% endif %}">Home</a>
+      <a href="{% url 'applications' %}" class="uiverse-btn {% if request.resolver_match.url_name == 'applications' %}active-uiverse-btn{% endif %}">Applications</a>
+      <a href="{% url 'forum_list' %}" class="uiverse-btn {% if request.resolver_match.url_name == 'forum_list' %}active-uiverse-btn{% endif %}">Forum</a>
+      {% if user.is_authenticated %}
+      <a href="{% url 'notetaking' %}" class="uiverse-btn {% if request.resolver_match.url_name == 'notetaking' %}active-uiverse-btn{% endif %}">Notes</a>
+      {% endif %}
+      <a href="{% url 'about_us' %}" class="uiverse-btn {% if request.resolver_match.url_name == 'about_us' %}active-uiverse-btn{% endif %}">About us</a>
+    </nav>
+    <div class="p-4">
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="uiverse-btn w-full">Logout</button>
+      </form>
+      <!-- Admin login button -->
+      <a href="/admin/login/" class="uiverse-btn w-full block text-center mt-2">Admin</a>
+      {% else %}
+      <a href="{% url 'login' %}" class="uiverse-btn w-full block text-center">Login</a>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 overflow-auto p-8">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
