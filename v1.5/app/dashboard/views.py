@@ -271,8 +271,8 @@ def applications_view(request):
     edit_widget = None
     all_groups = WidgetGroup.objects.all()
 
-    # Handle add/edit/delete widget and add/delete group
-    if request.method == 'POST':
+    # Handle add/edit/delete widget and add/delete group (only for authenticated users)
+    if request.method == 'POST' and request.user.is_authenticated:
         action = request.POST.get('action')
         if action == 'add':
             form = WidgetForm(request.POST, request.FILES)
@@ -320,8 +320,8 @@ def applications_view(request):
         else:
             messages.error(request, "Unknown action.")
 
-    # If editing, populate form with widget data
-    if request.GET.get('edit'):
+    # If editing, populate form with widget data (only for authenticated users)
+    if request.GET.get('edit') and request.user.is_authenticated:
         edit_widget = get_object_or_404(Widget, pk=request.GET.get('edit'))
         form = WidgetForm(instance=edit_widget)
 
@@ -348,8 +348,13 @@ def applications_view(request):
 def about_us_view(request):
     from .models import Document, DocumentForm
     
-    # Get all visible documents
+    # Get all visible documents grouped by person
+    documents_by_person = {}
     documents = Document.objects.filter(is_visible=True)
+    for doc in documents:
+        if doc.person not in documents_by_person:
+            documents_by_person[doc.person] = []
+        documents_by_person[doc.person].append(doc)
     
     # Handle document upload (only for authenticated users in edit mode)
     if request.method == 'POST' and request.user.is_authenticated and request.GET.get('editmode'):
@@ -372,6 +377,6 @@ def about_us_view(request):
     form = DocumentForm() if request.user.is_authenticated else None
     
     return render(request, 'dashboard/about_us.html', {
-        'documents': documents,
+        'documents_by_person': documents_by_person,
         'form': form,
     })

@@ -1,5 +1,5 @@
 # Use Python 3.13 slim image
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -16,11 +16,17 @@ RUN apt-get update \
         gettext \
         build-essential \
         libpq-dev \
+	python3-dev \
+	gcc\
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip \
+	&& pip install --no-cache-dir psycopg2-binary \
+	&& pip install --no-cache-dir -r requirements.txt \
+	&& python -c "import psycopg2; print('✅ psycopg2 installed successfully')"
+
 
 # Copy project
 COPY . /app/

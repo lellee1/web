@@ -2,9 +2,14 @@ import os
 from django.urls import reverse_lazy
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production-123456789')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'CXiCTGQ4OVa34jjfjvELBC_BBPH3vp9i7ohTERCAv_lfsW6zuueVp97hyp0LIgEFo2o')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-ALLOWED_HOSTS = ['www.blackfiber.se', 'blackfiber.se', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['web.blackfiber.se', 'www.blackfiber.se', 'blackfiber.se', 'localhost', '127.0.0.1', '*']
+
+# Trust Traefik proxy headers
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -51,7 +56,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('POSTGRES_DB', 'homelab_homepage'),
         'USER': os.environ.get('POSTGRES_USER', 'django_user'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'your-secure-database-password'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'django_password'),
         'HOST': os.environ.get('POSTGRES_HOST', 'db'),
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }

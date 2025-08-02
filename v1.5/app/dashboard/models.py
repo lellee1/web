@@ -105,9 +105,16 @@ class Note(models.Model):
         return self.title
 
 class Document(models.Model):
+    PERSON_CHOICES = [
+        ('linus', 'Linus'),
+        ('alexander', 'Alexander'), 
+        ('rasmus', 'Rasmus'),
+    ]
+    
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, help_text="Brief description of the document")
     file = models.FileField(upload_to='documents/', validators=[validate_document_file], help_text="Upload PDF or Word documents only")
+    person = models.CharField(max_length=20, choices=PERSON_CHOICES, help_text="Select which person this document belongs to")
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     is_visible = models.BooleanField(default=True, help_text="Whether this document is visible on the About Us page")
@@ -116,7 +123,7 @@ class Document(models.Model):
         ordering = ['-uploaded_at']
     
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.get_person_display()})"
     
     def get_file_extension(self):
         return self.file.name.split('.')[-1].lower() if self.file else ''
@@ -138,7 +145,7 @@ class WidgetForm(forms.ModelForm):
 class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
-        fields = ['title', 'description', 'file', 'is_visible']
+        fields = ['title', 'description', 'file', 'person', 'is_visible']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 2}),
             'file': forms.FileInput(attrs={'accept': '.pdf,.doc,.docx'}),

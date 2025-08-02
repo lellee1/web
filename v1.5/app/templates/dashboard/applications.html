@@ -76,12 +76,12 @@
 
 {% if not user.is_authenticated %}
   <div class="text-center p-8">
-    <p class="text-gray-400 text-lg mb-4">Du måste logga in för att se applikationslänkarna.</p>
+    <p class="text-gray-400 text-lg mb-4">Du kan se applikationerna men måste logga in för att använda länkarna.</p>
     <a href="{% url 'login' %}" class="uiverse-btn">Logga in</a>
   </div>
-{% else %}
+{% endif %}
 
-{% if request.GET.editmode %}
+{% if user.is_authenticated and request.GET.editmode %}
   <!-- Feedback messages -->
   {% if messages %}
     <ul>
@@ -226,7 +226,7 @@
 {% for group, widgets in groups.items %}
   <div class="flex items-center justify-between mt-8 mb-4">
     <h2 class="text-xl text-white">{{ group }}</h2>
-    {% if request.GET.editmode and group != "Other" %}
+    {% if user.is_authenticated and request.GET.editmode and group != "Other" %}
       <form method="post" style="display:inline;">
         {% csrf_token %}
         <input type="hidden" name="action" value="delete_group">
@@ -237,30 +237,49 @@
   </div>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     {% for widget in widgets %}
-      <a href="{{ widget.link }}" {% if widget.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %} class="block">
-        <div class="flex items-center p-4 bg-gray-800 rounded-lg mb-4 hover:bg-gray-700 transition">
-          {% if widget.icon %}
-            <img src="{{ widget.icon.url }}" alt="{{ widget.title }} icon" class="w-12 h-12 mr-4" />
-          {% endif %}
-          <div class="flex-1">
-            <h3 class="text-lg text-white">{{ widget.title }}</h3>
-            <p class="text-gray-400">{{ widget.description }}</p>
-          </div>
-          {% if request.GET.editmode %}
-            <div class="ml-4 flex flex-col space-y-2">
-              <a href="?editmode=1&edit={{ widget.id }}" class="uiverse-btn">Edit</a>
-              <form method="post" style="display:inline;">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="widget_id" value="{{ widget.id }}">
-                <button type="submit" class="uiverse-btn" onclick="return confirm('Delete this widget?');">Delete</button>
-              </form>
+      {% if user.is_authenticated %}
+        <a href="{{ widget.link }}" {% if widget.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %} class="block">
+          <div class="flex items-center p-4 bg-gray-800 rounded-lg mb-4 hover:bg-gray-700 transition">
+            {% if widget.icon %}
+              <img src="{{ widget.icon.url }}" alt="{{ widget.title }} icon" class="w-12 h-12 mr-4" />
+            {% endif %}
+            <div class="flex-1">
+              <h3 class="text-lg text-white">{{ widget.title }}</h3>
+              <p class="text-gray-400">{{ widget.description }}</p>
             </div>
-          {% endif %}
+            {% if request.GET.editmode %}
+              <div class="ml-4 flex flex-col space-y-2">
+                <a href="?editmode=1&edit={{ widget.id }}" class="uiverse-btn">Edit</a>
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="widget_id" value="{{ widget.id }}">
+                  <button type="submit" class="uiverse-btn" onclick="return confirm('Delete this widget?');">Delete</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        </a>
+      {% else %}
+        <div class="block cursor-not-allowed">
+          <div class="flex items-center p-4 bg-gray-800 rounded-lg mb-4 opacity-60 relative">
+            {% if widget.icon %}
+              <img src="{{ widget.icon.url }}" alt="{{ widget.title }} icon" class="w-12 h-12 mr-4" />
+            {% endif %}
+            <div class="flex-1">
+              <h3 class="text-lg text-white">{{ widget.title }}</h3>
+              <p class="text-gray-400">{{ widget.description }}</p>
+            </div>
+            <div class="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+              <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </div>
         </div>
-      </a>
+      {% endif %}
     {% endfor %}
   </div>
 {% endfor %}
-{% endif %}
+{% endblock %}
 {% endblock %}
